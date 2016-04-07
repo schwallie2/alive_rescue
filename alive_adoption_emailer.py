@@ -4,7 +4,7 @@ from oauth2client.client import SignedJwtAssertionCredentials
 # Config relies on secret.py
 import config
 # send_email uses secret.py for logins
-import send_email
+from send_email import EmailHandler
 
 
 class AliveEmailer(object):
@@ -12,18 +12,17 @@ class AliveEmailer(object):
         """
         Script to automate e-mails for ALIVE
         """
-        self.wks_names = {'1 week': 1,
-                          '1 month': 2,
-                          '3 month': 3,
-                          '1 year': 4}
         scope = ['https://spreadsheets.google.com/feeds']
         credentials = SignedJwtAssertionCredentials(config.drive_details['client_email'],
                                                     config.drive_details['private_key'], scope)
         gc = gspread.authorize(credentials)
         # Open a worksheet from spreadsheet with one shot
-        self.summary_email = send_email.EmailHandler(to=config.master_email, subject='E-mails being sent out today')
+        self.summary_email = EmailHandler(to=config.master_email, subject='E-mails being sent out today')
+        self.summary_email.add_random_text('<ul>')
         tit = 'Adoption Follow Up Database'
         self.wkbk = gc.open(tit)
+        # Now get the names, and find their index for parsing later
+        self.wks_names = {wks.title: ix for ix, wks in enumerate(self.wkbk.worksheets())}
         self.adopter = self._get_adopter_info()
         self.wks_text = self._get_email_text()
 
@@ -48,6 +47,7 @@ class AliveEmailer(object):
             if row['1 year'] == 'TRUE':
                 if pd.datetime.today() >= adopt_date + pd.tseries.offsets.Day(365):
                     self._send_update_email(idx, row, '1 year')
+        self.summary_email.send_email()
 
     def _send_update_email(self, idx, row, type_email):
         """
@@ -57,20 +57,19 @@ class AliveEmailer(object):
         :param type_email: key to self.wks_names / self.wks_text
         :return:
         """
-        pass
+        email_txt = self.wks_text[type_email].format(Adopter_First_Name=row['Adopter First Name'],
+                                                     Pet_NAME=row['PET Name'])
+        self.summary_email.add_random_text('<li>%s: %s</li>' % (row['PET Name'], type_email))
 
     def _get_adopter_info(self):
-        wks = self.wkbk.get_worksheet(0)
+        wks = self.wkbk.get_worksheet(self.wks_names['Adopter Information'])
         adopter = pd.DataFrame(wks.get_all_records())
         adopter['Adoption Date'] = pd.to_datetime(adopter['Adoption Date'])
         return adopter
 
-    def _send_new_email(self, to, subject):
-        self.eh = send_email.EmailHandler(to=to, subject=subject, from_='ALIVE Rescue', user=config.gmail_user,
-                                          pwd=config.gmail_pwd)
-        self.eh.add_random_text('''<br><br>Sarah Brewster<br>
+    def _add_footer(self, eh):
+        eh.add_random_text('''<br><br>Sarah Brewster<br>
                               Director of Adoptions and Foster''')
-        self.eh.send_email()
 
     def _get_email_text(self):
         """
@@ -79,14 +78,12 @@ class AliveEmailer(object):
         """
         master = {}
         for key, val in self.wks_names.iteritems():
-            wks = self._get_sheet_by_name(sheetname=val)
-            txt = wks.get_all_records()
-            master[key] = txt[0]
+            print key
+            if '1' in key or '3' in key:  # 1 week, 1 month, 3 month, 1 year
+                wks = self.wkbk.get_worksheet(val)
+                txt = wks.get_all_values()[0][0]
+                master[key] = txt
         return master
-
-    def _get_sheet_by_name(self, sheetname):
-        wks = self.wkbk.get_worksheet(sheetname)
-        return wks
 
 
 if __name__ == '__main__':
@@ -98,4 +95,4 @@ __credits__ = ["Chase Schwalbach"]
 __version__ = "1.0"
 __maintainer__ = "Chase Schwalbach"
 __email__ = "chase.schwalbach@avant.com"
-__status__ = "Production"
+__status__ = "Beta"
