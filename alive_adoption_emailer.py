@@ -11,8 +11,7 @@ class AliveEmailer(object):
         """
         Script to automate e-mails for ALIVE
         """
-        self.wks_names = {'Adopter Information': 0,
-                          '1 week': 1,
+        self.wks_names = {'1 week': 1,
                           '1 month': 2,
                           '3 month': 3,
                           '1 year': 4}
@@ -23,8 +22,8 @@ class AliveEmailer(object):
         # Open a worksheet from spreadsheet with one shot
         tit = 'Adoption Follow Up Database'
         self.wkbk = gc.open(tit)
-        self._check_for_emails()
-        self._get_sheet_by_name(sheetname=self.wks_names['1 month'])
+        self.adopter = self._get_adopter_info()
+        self.wks_text = self._get_email_text()
 
     def main(self):
         """
@@ -52,22 +51,38 @@ class AliveEmailer(object):
                     print 'year'
                     print row
 
-    def _send_new_email(self, idx, row):
+    def _send_update_email(self, idx, row, type_email):
         """
-        Sending an e-mail, and adding it to the summary email
+        When something needs to be sent, this will add to a summary email and send
+        :param idx:
+        :param row:
+        :param type_email: key to self.wks_names / self.wks_text
+        :return:
         """
 
-    def _check_for_emails(self):
-        sheetname = 'Adopter Information'
-        wks = self.wkbk.get_worksheet(self.wks_names[sheetname])
-        self.adopter = pd.DataFrame(wks.get_all_records())
-        self.adopter['Adoption Date'] = pd.to_datetime(self.adopter['Adoption Date'])
+    def _get_adopter_info(self):
+        wks = self.wkbk.get_worksheet(0)
+        adopter = pd.DataFrame(wks.get_all_records())
+        adopter['Adoption Date'] = pd.to_datetime(adopter['Adoption Date'])
+        return adopter
 
     def _send_new_email(self, to, subject):
         self.eh = send_email.EmailHandler(to=to, subject=subject, from_='ALIVE Rescue')
         self.eh.add_random_text('''<br><br>Sarah Brewster<br>
                               Director of Adoptions and Foster''')
-        self.eh.send_email(, config.email_pass)
+        self.eh.send_email(config.gmail_user, config.gmail_pwd)
+
+    def _get_email_text(self):
+        """
+        Get the text for each email that we'll be using
+        :return:
+        """
+        master = {}
+        for key, val in self.wks_names.iteritems():
+            wks = self._get_sheet_by_name(sheetname=val)
+            txt = wks.get_all_records()
+            master[key] = txt[0]
+        return master
 
     def _get_sheet_by_name(self, sheetname):
         wks = self.wkbk.get_worksheet(sheetname)
