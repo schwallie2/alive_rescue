@@ -63,7 +63,7 @@ class AliveEmailer(object):
                                                      Pet_NAME=row['PET Name'])
         email_subject = 'ALIVE Rescue follow up!'
         send_email.send_email(to_user='schwallie@gmail.com', SUBJECT=email_subject, TEXT=email_txt, FROM='ALIVE Rescue')
-        # Need to update the field in the Google Sheet Now!
+        # TODO: Need to update the field in the Google Sheet Now!
         # Now send a summary email to Sarah
         self.summary_email.add_random_text('<li>%s: %s</li>' % (row['PET Name'], type_email))
 
