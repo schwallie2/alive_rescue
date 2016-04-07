@@ -59,6 +59,7 @@ class AliveEmailer(object):
         :param type_email: key to self.wks_names / self.wks_text
         :return:
         """
+        pass
 
     def _get_adopter_info(self):
         wks = self.wkbk.get_worksheet(0)
