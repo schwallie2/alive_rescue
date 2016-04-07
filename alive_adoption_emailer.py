@@ -4,6 +4,7 @@ from oauth2client.client import SignedJwtAssertionCredentials
 # Config relies on secret.py
 import config
 # send_email uses secret.py for logins
+import send_email
 from send_email import EmailHandler
 
 
@@ -57,8 +58,13 @@ class AliveEmailer(object):
         :param type_email: key to self.wks_names / self.wks_text
         :return:
         """
+        # Send the e-mail to the person and Sarah
         email_txt = self.wks_text[type_email].format(Adopter_First_Name=row['Adopter First Name'],
                                                      Pet_NAME=row['PET Name'])
+        email_subject = 'ALIVE Rescue follow up!'
+        send_email.send_email(to_user='schwallie@gmail.com', SUBJECT=email_subject, TEXT=email_txt, FROM='ALIVE Rescue')
+        # Need to update the field in the Google Sheet Now!
+        # Now send a summary email to Sarah
         self.summary_email.add_random_text('<li>%s: %s</li>' % (row['PET Name'], type_email))
 
     def _get_adopter_info(self):

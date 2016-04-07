@@ -248,7 +248,7 @@ class EmailHandler(object):
 
 def send_email(to_user=[config.master_email], SUBJECT="Automated Query Return",
                TEXT="Default Text, If this is here there is an error", csv_loc=None,
-               filename=None, type_='html'):
+               filename=None, type_='html', FROM=config.gmail_user):
     """
     Wrapper for EmailHandler to send a quick email with one function call
     :param to_user:
@@ -261,7 +261,7 @@ def send_email(to_user=[config.master_email], SUBJECT="Automated Query Return",
     """
     gmail_user = config.gmail_user
     gmail_pwd = config.gmail_pwd
-    FROM = config.gmail_user
+    FROM = FROM
     eh = EmailHandler(to=to_user, subject=SUBJECT, tpe=type_, from_=FROM,
                       user=gmail_user, pwd=gmail_pwd)
     eh.add_random_text(TEXT)
