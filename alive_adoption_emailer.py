@@ -1,9 +1,8 @@
-import gspread
 import pandas as pd
 # Config relies on secret.py
 import config
-# send_email uses secret.py for logins
 import send_email
+# send_email uses secret.py for logins
 from send_email import EmailHandler
 
 
@@ -13,13 +12,17 @@ class AliveEmailer(object):
         Script to automate e-mails for ALIVE
         """
         # Open a worksheet from spreadsheet with one shot
-        self.summary_email = EmailHandler(to=[config.master_email, 'schwallie@gmail.com'], subject='E-mails being sent out today')
+        self.summary_email = EmailHandler(to=[config.master_email, 'schwallie@gmail.com'],
+                                          subject='E-mails being sent out today')
         self.summary_email.add_random_text('<ul>')
-        tit = 'Adoption Follow Up Database'
-        self.wkbk = config.open_connection_to_google_spreadsheet(tit)
+        self.tit = 'Adoption Follow Up Database'
+        self.wkbk = config.open_connection_to_google_spreadsheet(self.tit)
         # Now get the names, and find their index for parsing later
         self.wks_names = {wks.title: ix for ix, wks in enumerate(self.wkbk.worksheets())}
         self.adopter = self._get_adopter_info()
+        self.cols = ['Adopter First Name', 'Adopter Last Name', 'Email Address', 'PET Name', 'PET Name_ALIVE',
+                     'Adoption Date', '1 week', '1 month', '3 month', '1 year', 'Training Completed',
+                     'Deposit Check Cashed', 'Note']
         self.wks_text = self._get_email_text()
 
     def main(self):
@@ -44,6 +47,8 @@ class AliveEmailer(object):
                 if pd.datetime.today() >= adopt_date + pd.tseries.offsets.Day(365):
                     self._send_update_email(idx, row, '1 year')
         self.summary_email.send_email()
+        self.adopter = self.adopter[self.cols]
+        config.df_to_google_doc(self.adopter, self.tit, 'Adopter Information', include_index=False)
 
     def _send_update_email(self, idx, row, type_email):
         """
@@ -57,15 +62,19 @@ class AliveEmailer(object):
         email_txt = self.wks_text[type_email].format(Adopter_First_Name=row['Adopter First Name'],
                                                      Pet_NAME=row['PET Name'])
         email_subject = 'ALIVE Rescue follow up!'
-        send_email.send_email(to_user=['schwallie@gmail.com', config.master_email], SUBJECT=email_subject, TEXT=email_txt, FROM='ALIVE Rescue')
-        # TODO: Need to update the field in the Google Sheet Now!
+        email_to = row['Email Address'].replace(';', ',')
+        email_to = email_to.split(',')
+        sending = [config.master_email]
+        sending.extend(email_to)
+        send_email.send_email(to_user=sending, SUBJECT=email_subject, TEXT=email_txt, FROM='ALIVE Rescue')
+        self.adopter.loc[idx, type_email] = 'SENT'
         # Now send a summary email to Sarah
         self.summary_email.add_random_text('<li>%s: %s</li>' % (row['PET Name'], type_email))
 
     def _get_adopter_info(self):
         wks = self.wkbk.get_worksheet(self.wks_names['Adopter Information'])
         adopter = pd.DataFrame(wks.get_all_records())
-        adopter['Adoption Date'] = pd.to_datetime(adopter['Adoption Date'])
+        adopter['Adoption Date'] = pd.to_datetime(adopter['Adoption Date']).dt.date
         return adopter
 
     def _add_footer(self, eh):

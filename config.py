@@ -1,13 +1,8 @@
-import os
-
 import pandas as pd
 from string import ascii_uppercase
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from secret import *
-import requests
-import plotly
-from subprocess import call
 
 pd.set_option('display.height', 1000)
 pd.set_option('display.max_rows', 500)
