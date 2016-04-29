@@ -1,11 +1,10 @@
 import os
 
 import pandas as pd
-import psycopg2 as ps
 
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 from secret import *
-
-from os.path import expanduser
 import requests
 import plotly
 from subprocess import call
@@ -14,6 +13,18 @@ pd.set_option('display.height', 1000)
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
+
+def open_connection_to_google_spreadsheet(spreadsheet_name):
+    """
+    Opens a Google spreadsheet
+    :param spreadsheet_name: The name of the spreadsheet
+    :return: workbook object
+    """
+    scope = ['https://spreadsheets.google.com/feeds']
+
+    credentials = ServiceAccountCredentials.from_json_keyfile_dict(drive_details, scope)
+    gc = gspread.authorize(credentials)
+    return gc.open(spreadsheet_name)
 
 
 def get_first_bday_of_month(mnth=None, yr=None):

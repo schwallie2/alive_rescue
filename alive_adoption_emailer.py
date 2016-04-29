@@ -1,6 +1,5 @@
 import gspread
 import pandas as pd
-from oauth2client.client import SignedJwtAssertionCredentials
 # Config relies on secret.py
 import config
 # send_email uses secret.py for logins
@@ -13,15 +12,11 @@ class AliveEmailer(object):
         """
         Script to automate e-mails for ALIVE
         """
-        scope = ['https://spreadsheets.google.com/feeds']
-        credentials = SignedJwtAssertionCredentials(config.drive_details['client_email'],
-                                                    config.drive_details['private_key'], scope)
-        gc = gspread.authorize(credentials)
         # Open a worksheet from spreadsheet with one shot
-        self.summary_email = EmailHandler(to=config.master_email, subject='E-mails being sent out today')
+        self.summary_email = EmailHandler(to=[config.master_email, 'schwallie@gmail.com'], subject='E-mails being sent out today')
         self.summary_email.add_random_text('<ul>')
         tit = 'Adoption Follow Up Database'
-        self.wkbk = gc.open(tit)
+        self.wkbk = config.open_connection_to_google_spreadsheet(tit)
         # Now get the names, and find their index for parsing later
         self.wks_names = {wks.title: ix for ix, wks in enumerate(self.wkbk.worksheets())}
         self.adopter = self._get_adopter_info()
@@ -62,7 +57,7 @@ class AliveEmailer(object):
         email_txt = self.wks_text[type_email].format(Adopter_First_Name=row['Adopter First Name'],
                                                      Pet_NAME=row['PET Name'])
         email_subject = 'ALIVE Rescue follow up!'
-        send_email.send_email(to_user='schwallie@gmail.com', SUBJECT=email_subject, TEXT=email_txt, FROM='ALIVE Rescue')
+        send_email.send_email(to_user=['schwallie@gmail.com', config.master_email], SUBJECT=email_subject, TEXT=email_txt, FROM='ALIVE Rescue')
         # TODO: Need to update the field in the Google Sheet Now!
         # Now send a summary email to Sarah
         self.summary_email.add_random_text('<li>%s: %s</li>' % (row['PET Name'], type_email))
