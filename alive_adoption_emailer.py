@@ -20,7 +20,7 @@ class AliveEmailer(object):
         # Now get the names, and find their index for parsing later
         self.wks_names = {wks.title: ix for ix, wks in enumerate(self.wkbk.worksheets())}
         self.adopter = self._get_adopter_info()
-        self.cols = ['Adopter First Name', 'Adopter Last Name', 'Email Address', 'PET Name', 'PET Name_ALIVE',
+        self.cols = ['Adopter First Name', 'Adopter Last Name', 'Email Address', 'DOG/CAT', 'PET Name', 'PET Name_ALIVE',
                      'Adoption Date', '1 week', '1 month', '3 month', '1 year', 'Training Completed',
                      'Deposit Check Cashed', 'Note']
         self.wks_text = self._get_email_text()
@@ -59,10 +59,11 @@ class AliveEmailer(object):
         :return:
         """
         # Send the e-mail to the person and Sarah
-        if row['Dog/Cat'].lower() == 'cat':
+        if row['DOG/CAT'].lower() == 'cat':
             type_email = 'cat %s' % type_email
         email_txt = self.wks_text[type_email].format(Adopter_First_Name=row['Adopter First Name'],
                                                      Pet_NAME=row['PET Name'])
+        email_txt += self._add_footer()
         email_subject = 'ALIVE Rescue follow up!'
         email_to = row['Email Address'].replace(';', ',')
         email_to = email_to.split(',')
@@ -79,9 +80,8 @@ class AliveEmailer(object):
         adopter['Adoption Date'] = pd.to_datetime(adopter['Adoption Date']).dt.date
         return adopter
 
-    def _add_footer(self, eh):
-        eh.add_random_text('''<br><br>Sarah Brewster<br>
-                              Director of Adoptions and Foster''')
+    def _add_footer(self):
+        return '''<br><br><br><div><span style="color:rgb(117,117,117);font-family:&quot;helvetica neue&quot;,helvetica,arial,sans-serif">Katelyn Aase</span><div style="color:rgb(117,117,117);font-family:&quot;helvetica neue&quot;,helvetica,arial,sans-serif"><font size="1">Director of Adoptions and Foster | ALIVE Rescue</font></div><div style="color:rgb(117,117,117);font-family:&quot;helvetica neue&quot;,helvetica,arial,sans-serif"><font size="1"><a href="mailto:katelyn.aliverescue@gmail.com" target="_blank">katelyn.aliverescue@gmail.com</a></font></div></div>'''
 
     def _get_email_text(self):
         """
@@ -93,6 +93,7 @@ class AliveEmailer(object):
             print key
             if '1' in key or '3' in key:  # 1 week, 1 month, 3 month, 1 year
                 wks = self.wkbk.get_worksheet(val)
+                print wks.get_all_values()
                 txt = wks.get_all_values()[0][0]
                 master[key] = txt
         return master
