@@ -59,6 +59,7 @@ class AliveEmailer(object):
         :return:
         """
         # Send the e-mail to the person and Sarah
+        replace_col = type_email
         if row['DOG/CAT'].lower() == 'cat':
             type_email = 'cat %s' % type_email
         email_txt = self.wks_text[type_email].format(Adopter_First_Name=row['Adopter First Name'],
@@ -70,7 +71,7 @@ class AliveEmailer(object):
         sending = [config.master_email]
         sending.extend(email_to)
         send_email.send_email(to_user=sending, SUBJECT=email_subject, TEXT=email_txt, FROM='ALIVE Rescue')
-        self.adopter.loc[idx, type_email] = 'SENT'
+        self.adopter.loc[idx, replace_col] = 'SENT'
         # Now send a summary email to Sarah
         self.summary_email.add_random_text('<li>%s: %s</li>' % (row['PET Name'], type_email))
 
