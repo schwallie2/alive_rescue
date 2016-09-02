@@ -1,8 +1,6 @@
-import pandas as pd
-# Config relies on secret.py
 import config
+import pandas as pd
 import send_email
-# send_email uses secret.py for logins
 from send_email import EmailHandler
 
 
@@ -20,7 +18,8 @@ class AliveEmailer(object):
         # Now get the names, and find their index for parsing later
         self.wks_names = {wks.title: ix for ix, wks in enumerate(self.wkbk.worksheets())}
         self.adopter = self._get_adopter_info()
-        self.cols = ['Adopter First Name', 'Adopter Last Name', 'Email Address', 'DOG/CAT', 'PET Name', 'PET Name_ALIVE',
+        self.cols = ['Adopter First Name', 'Adopter Last Name', 'Email Address', 'DOG/CAT', 'PET Name',
+                     'PET Name_ALIVE',
                      'Adoption Date', '1 week', '1 month', '3 month', '1 year', 'Training Completed',
                      'Deposit Check Cashed', 'Note']
         self.wks_text = self._get_email_text()
@@ -34,17 +33,17 @@ class AliveEmailer(object):
         for idx, row in self.adopter.iterrows():
             adopt_date = row['Adoption Date']
             if row['1 week'] == 'TRUE':  # Need to send, if after 1 week
-                if pd.datetime.today() >= adopt_date + pd.tseries.offsets.Week(1):
+                if adopt_date + pd.tseries.offsets.Week(1) <= pd.datetime.today() < adopt_date + pd.tseries.offsets.Day(10):
                     # This Adopter needs to send out the weekly update
                     self._send_update_email(idx, row, '1 week')
             if row['1 month'] == 'TRUE':
-                if pd.datetime.today() >= adopt_date + pd.tseries.offsets.Day(30):
+                if adopt_date + pd.tseries.offsets.Day(30) <= pd.datetime.today() < (adopt_date + pd.tseries.offsets.Day(40)):
                     self._send_update_email(idx, row, '1 month')
             if row['3 month'] == 'TRUE':
-                if pd.datetime.today() >= adopt_date + pd.tseries.offsets.Day(90):
+                if (adopt_date + pd.tseries.offsets.Day(90)) <= pd.datetime.today() < (adopt_date + pd.tseries.offsets.Day(110)):
                     self._send_update_email(idx, row, '3 month')
             if row['1 year'] == 'TRUE':
-                if pd.datetime.today() >= adopt_date + pd.tseries.offsets.Day(365):
+                if (adopt_date + pd.tseries.offsets.Day(365)) <= pd.datetime.today() < (adopt_date + pd.tseries.offsets.Day(385)):
                     self._send_update_email(idx, row, '1 year')
         self.summary_email.send_email()
         self.adopter = self.adopter[self.cols]
