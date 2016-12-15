@@ -32,6 +32,8 @@ class AliveEmailer(object):
         """
         for idx, row in self.adopter.iterrows():
             adopt_date = row['Adoption Date']
+            if pd.isnull(adopt_date):
+                continue
             if row['1 week'] == 'TRUE':  # Need to send, if after 1 week
                 if adopt_date + pd.tseries.offsets.Week(1) <= pd.datetime.today() < adopt_date + pd.tseries.offsets.Day(10):
                     # This Adopter needs to send out the weekly update
@@ -61,6 +63,8 @@ class AliveEmailer(object):
         replace_col = type_email
         if row['DOG/CAT'].lower() == 'cat':
             type_email = 'cat %s' % type_email
+        if type_email not in self.wks_text:
+            return
         email_txt = self.wks_text[type_email].format(Adopter_First_Name=row['Adopter First Name'],
                                                      Pet_NAME=row['PET Name'])
         email_txt += self._add_footer()
